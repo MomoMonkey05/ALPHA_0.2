@@ -1,0 +1,22 @@
+extends StateMachine
+
+@export var player_movement_stats: MovementStats
+#exports the movement statts
+
+var dialogue_box: CanvasLayer
+#sets the dialogue box to a canvaslayer
+
+func _ready():
+	super()
+	dialogue_box = get_tree().get_first_node_in_group("dialogue_box")
+	dialogue_box.opened.connect(_on_entering_talking_state)
+	dialogue_box.closed.connect(_on_exiting_talking_state)
+#connects the signals and sets the dialogue box to the right group
+
+func _on_entering_talking_state(_count):
+	_change_state("Talking")
+#enters talking state
+
+func _on_exiting_talking_state(_dummy):
+	_change_state("Idle")
+#once finishing a conversation exits talking state
