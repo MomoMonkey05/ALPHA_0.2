@@ -1,0 +1,18 @@
+extends StaticBody3D
+
+@export var lines: Array[String]
+var times_talked = 0
+#sets its dialogue lines to a string that can be modified
+
+func _ready() -> void:
+	add_to_group("interactable")
+#is added to the interactable group
+
+func interact():
+	print("AYE IM WALKIN´ ERE!")
+#prints a line once interacting
+
+func talked_to():
+	times_talked += 1
+	prints(name, "talked to: ", times_talked)
+#prints the amount of time it has been talked to once entering a conversation
