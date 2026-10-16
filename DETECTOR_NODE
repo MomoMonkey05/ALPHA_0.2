@@ -1,0 +1,62 @@
+extends Area3D
+
+signal nearby_body(dummy)
+signal faraway_body
+#signals that detect if something is close or not
+
+@onready var label = $CanvasLayer/Label
+var dialogue_box: CanvasLayer
+var current_target = null
+#vairbales that are used for the dialogue box and targets
+
+func _ready():
+	add_to_group("detector")
+	label.visible = false
+	body_entered.connect(_on_body_entered)
+	body_exited.connect(_on_body_exited)
+	dialogue_box = get_tree().get_first_node_in_group("dialogue_box")
+	dialogue_box.opened.connect(_box_opens)
+	dialogue_box.closed.connect(_box_closes)
+#upon starting its added to a group and connects the functions with the body
+#as well as the dialogue box
+
+func _on_body_entered(body):
+	if not body.is_in_group("interactable"):
+		return
+	current_target = body
+	label.visible = should_show_prompt()
+	nearby_body.emit(body.name)
+#upon entering a body the body becomes the target and the interact label becomes visible 
+
+func _box_opens(_count):
+	label.visible = false
+	current_target.talked_to()
+#when the dialogue box opens the interact label hides
+
+func _box_closes(_speaker):
+	label.visible = should_show_prompt()
+#when the dialogue box closes the interact label shows
+
+func _on_body_exited(body):
+	if current_target != body:
+		return
+	current_target = null
+	label.visible = false
+	faraway_body.emit()
+#upon leaving a certain range of the body the label hides and the current target dissapears
+
+func _physics_process(_delta):
+	if not Input.is_action_just_pressed("interact"):
+		return
+	if dialogue_box.is_open:
+		dialogue_box.advance()
+		return
+	if not current_target:
+		return
+	dialogue_box.open(current_target.lines, current_target)
+#if the dialogue box isn't open then it opens, if it is open then it advances
+#and this is once pressing interact
+
+func should_show_prompt() -> bool:
+	return current_target and not dialogue_box.is_open
+#a function that returns the state of the current target and the opposite of the open dialogue box
