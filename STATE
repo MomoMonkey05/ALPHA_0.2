@@ -1,0 +1,20 @@
+extends Node
+class_name State
+@warning_ignore("unused_signal")
+signal finished(next_state: String)
+#creates the State class and a signal to exit the current state
+#it will recieve the next state as a string name so the node can be connected
+
+func _enter() -> void:
+	return
+
+func _exit() -> void:
+	return
+
+func _state_input(_event: InputEvent) -> void:
+	return
+
+func _update(_delta: float) -> void:
+	return
+
+#functions that enter and exit the states as well as recieving input and updating
