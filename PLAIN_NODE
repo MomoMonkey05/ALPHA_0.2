@@ -1,0 +1,40 @@
+extends Node
+
+var detector: Area3D
+var dialogue_box: CanvasLayer
+var total = 0
+var npc_dic = {}
+#variables that have to do with the dummies
+
+func _ready():
+	dialogue_box = get_tree().get_first_node_in_group("dialogue_box")
+	dialogue_box.opened.connect(_on_signal_opened)
+	dialogue_box.closed.connect(_on_signal_closed)
+	detector = get_tree().get_first_node_in_group("detector")
+	detector.nearby_body.connect(_on_nearby_body_entered)
+	detector.faraway_body.connect(_on_nearby_body_exited)
+#connecting the dialogue box and detector to this node and connecting their signals
+
+func _on_signal_opened(count):
+	print("Conversation lines: ", count)
+	print("---------------------------")
+	print("freeze")
+#prints freeze and the amount of lines the conversation has
+
+func _on_signal_closed(speaker):
+	print("unfreeze")
+	total += 1
+	print("----------------------------")
+	npc_dic[speaker.name] = npc_dic.get(speaker.name, 0) + 1
+	print("Finished conversation with: ", speaker.name)
+	print("Total of conversations had: ", total)
+	print("----------------------------")
+#prints unfreeze and who you finished a conversation with as well as the total amount of conversations had
+
+func _on_nearby_body_entered(dummy):
+	print("Nearby: ", dummy)
+#prints the dummy name once nearby
+
+func _on_nearby_body_exited():
+	print("Nothing Nearby")
+#prints that nothing is nearby
