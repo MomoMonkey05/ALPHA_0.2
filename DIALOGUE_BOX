@@ -1,0 +1,41 @@
+extends CanvasLayer
+
+signal opened(line_count)
+signal closed(dummy)
+#signals that connect with the dummy
+
+@onready var label = $Panel/Label
+var speaker: StaticBody3D
+var lines = []
+var index = 0
+var is_open = false
+#variables that include the dialogue box lines of dialogue
+
+func _ready():
+	hide()
+#upon starting its not visible
+
+func open(new_lines, dummy):
+	speaker = dummy
+	lines = new_lines
+	index = 0
+	label.text = lines[index]
+	is_open = true
+	opened.emit(lines.size())
+	show()
+#when the dialogue box opens it lets the dialogue fluctuate fluently as well as opening it up
+
+
+func advance():
+	index += 1
+	if index > (lines.size() - 1):
+		close()
+	else:
+		label.text = lines[index]
+#it advances the text whenever you click interact
+
+func close():
+	is_open = false
+	closed.emit(speaker)
+	hide()
+#it closes and hides it once finishing the conversation
