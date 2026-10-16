@@ -1,0 +1,143 @@
+extends Node3D
+
+#variables that were not able to be exported for some weird GODOT bug...
+@onready var character = owner
+@onready var edge_spring_arm = %edge_spring_arm
+@onready var rear_spring_arm = %rear_spring_arm
+@onready var camera = %Camera3D
+#sets the character variables to their nodes in onready since GODOT doesn't let me export
+
+var camera_rotation: Vector2 = Vector2.ZERO
+@export var mouse_sensitivity := 0.002
+@export var max_y_rotation := 1.2
+@export var camera_alignment_speed := 0.1
+var camera_tween: Tween
+@onready var default_edge_spring_arm_length: float = edge_spring_arm.spring_length
+@export var aim_rear_spring_length: float = 0.5
+@export var aim_edge_spring_length: float = 0.5
+@export var aim_speed: float = 0.2
+@export var aim_fov: float = 55
+@onready var default_rear_spring_arm_length: float = rear_spring_arm.spring_length
+@onready var default_fov: float = camera.fov
+@export var sprint_fov: float = 100
+@export var sprint_tween_speed: float = 0.4
+#some other variables as well
+
+func _ready() -> void:
+	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+#captures the mouse once entering the game
+
+func _input(event: InputEvent) -> void:
+	if event.is_action_pressed("esc"):
+		if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
+			Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+		else:
+			Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	#releases the mouse once user presses "esc" button to exit the game
+	
+	if event is InputEventMouseMotion:
+		var mouse_event: Vector2 = event.screen_relative * mouse_sensitivity
+		camera_look(mouse_event)
+	#makes the camera look around at the speed of the mouse sensetivity by the screen size
+	
+	if event.is_action_pressed("swap_camera"):
+		swap_camera_alignment()
+#calls the swap_camera_alignment function once "tab" is pressed
+
+func camera_look(mouse_movement: Vector2) -> void:
+	camera_rotation += mouse_movement
+	transform.basis = Basis()
+	character.transform.basis = Basis()
+	#aligns the default world axis to the centre
+	#to not lose control when looking around with the camera
+	
+	character.rotate_object_local(Vector3 (0,1,0), -camera_rotation.x)
+	rotate_object_local(Vector3 (1,0,0), camera_rotation.y)
+	camera_rotation.y = clamp(camera_rotation.y, -max_y_rotation, max_y_rotation / 2.5)
+	#clamps the camera rotation on the y-axis in order to not rotate the character upside-down
+
+func swap_camera_alignment() -> void:
+	var new_pos: float = -sign(edge_spring_arm.spring_length)
+	set_rear_spring_arm_position(new_pos, camera_alignment_speed)
+	#sets the edge of the distance between both edge_spring_arm to be the same as well as
+	#setting the rear arm position to follow the path of the edge_spring_arm
+
+func set_rear_spring_arm_position(pos: float, speed: float) -> void:
+	if camera_tween:
+		camera_tween.kill()
+	camera_tween = get_tree().create_tween()
+	camera_tween.tween_property(edge_spring_arm, "spring_length", pos, speed)
+	#if the camera has already tweened it kills the input, and makes the camera move
+	#from side to side in order to change view
+
+func enter_aim() -> void:
+	if camera_tween:
+		camera_tween.kill()
+	camera_tween = get_tree().create_tween().set_parallel()
+	
+	camera_tween.tween_property(camera, "fov", aim_fov, aim_speed)
+	camera_tween.tween_property(edge_spring_arm, "spring_length", aim_edge_spring_length*sign(-edge_spring_arm.spring_length), aim_speed)
+	camera_tween.tween_property(rear_spring_arm, "spring_length", aim_rear_spring_length, aim_speed)
+	
+	camera_tween.set_trans(Tween.TRANS_EXPO)
+	camera_tween.set_ease(Tween.EASE_OUT)
+#upon entering aim changes the fov to a closer setting and pulls the camera forward
+
+func exit_aim() -> void:
+	if camera_tween:
+		camera_tween.kill()
+	camera_tween = get_tree().create_tween().set_parallel()
+	
+	camera_tween.tween_property(camera, "fov", default_fov, aim_speed)
+	camera_tween.tween_property(edge_spring_arm, "spring_length", default_edge_spring_arm_length*-sign(edge_spring_arm.spring_length), aim_speed)
+	camera_tween.tween_property(rear_spring_arm, "spring_length", default_rear_spring_arm_length, aim_speed)
+	
+	camera_tween.set_trans(Tween.TRANS_EXPO)
+	camera_tween.set_ease(Tween.EASE_OUT)
+#upon exiting aim changes the fov to the default setting and pushes the camera away and to the other side
+
+
+func enter_sprint() -> void:
+	if camera_tween:
+		camera_tween.kill()
+	camera_tween = get_tree().create_tween()
+	camera_tween.set_parallel()
+	
+	camera_tween.tween_property(camera, "fov", sprint_fov, sprint_tween_speed)
+	camera_tween.tween_property(edge_spring_arm, "spring_length", default_edge_spring_arm_length*sign(edge_spring_arm.spring_length), aim_speed)
+	camera_tween.tween_property(rear_spring_arm, "spring_length", default_rear_spring_arm_length, aim_speed)
+	
+	camera_tween.set_trans(Tween.TRANS_EXPO)
+	camera_tween.set_ease(Tween.EASE_OUT)
+#upon entering sprint changes the camera to the appropriate fov and pushes the camera away
+
+func exit_sprint() -> void:
+	if camera_tween:
+		camera_tween.kill()
+	camera_tween = get_tree().create_tween()
+	camera_tween.set_parallel()
+	
+	camera_tween.tween_property(camera, "fov", default_fov, sprint_tween_speed)
+	camera_tween.tween_property(edge_spring_arm, "spring_length", default_edge_spring_arm_length*sign(edge_spring_arm.spring_length), aim_speed)
+	camera_tween.tween_property(rear_spring_arm, "spring_length", default_rear_spring_arm_length, aim_speed)
+	
+	camera_tween.set_trans(Tween.TRANS_EXPO)
+	camera_tween.set_ease(Tween.EASE_OUT)
+#upon exiting sprint it changes the camera to the default fov and pulls the camera forward
+
+
+func _on_sprint_started() -> void:
+	enter_sprint()
+#function connected via signal to the movement states
+
+func _on_sprint_ended() -> void:
+	exit_sprint()
+#function connected via signal to the movement states
+
+func _on_aim_entered() -> void:
+	enter_aim()
+#function connected via signal to the movement states
+
+func _on_aim_exited() -> void:
+	exit_aim()
+#function connected via signal to the movement states
